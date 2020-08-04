@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	dbTemplateURI = "https://raw.githubusercontent.com/openshift/origin/v3.11.0/examples/db-templates/%s-%s-template.json"
+	//dbTemplateURI = "https://raw.githubusercontent.com/openshift/origin/v3.11.0/examples/db-templates/%s-%s-template.json"
+	dbTemplateURI = "https://raw.githubusercontent.com/openshift/origin/release-4.5/examples/db-templates/%s-%s-template.json"
 	// PersistentStorage can be used if we want to deploy database with Persistent
 	PersistentStorage storage = "persistent" // nolint:varcheck
 
