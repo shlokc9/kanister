@@ -284,7 +284,16 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 // use Strategic Merge to patch default pod specs with the passed specs
 func patchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override crv1alpha1.JSONMap) (v1.PodSpec, error) {
 	// Merge default specs and override specs with StrategicMergePatch
-	mergedPatch, err := strategicMergeJsonPatch(defaultPodSpecs, override)
+	var typeAssetPodOverride v1.PodSpec
+	p, err := json.Marshal(override)
+	if err != nil {
+		return v1.PodSpec{}, err
+	}
+	err = json.Unmarshal(p, &typeAssetPodOverride)
+	if err != nil {
+		fmt.Println("Cannot process not valid json")
+	}
+	mergedPatch, err := strategicMergeJsonPatch(defaultPodSpecs, typeAssetPodOverride)
 	if err != nil {
 		return v1.PodSpec{}, err
 	}
