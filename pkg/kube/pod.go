@@ -319,10 +319,14 @@ func CreateAndMergeJsonPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("OnceMoreeeeeeee: %v", podSpec)
+	fmt.Printf("OnceMoreeeeeeee: %v\n", podSpec)
+	podSpecBytes, err := json.Marshal(podSpec)
+	if err != nil {
+		return nil, err
+	}
 	// Convert merged json to map[string]interface{}
 	var merged map[string]interface{}
-	err = json.Unmarshal(mergedPatch, &merged)
+	err = json.Unmarshal(podSpecBytes, &merged)
 	if err != nil {
 		return nil, err
 	}
