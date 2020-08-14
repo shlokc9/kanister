@@ -340,7 +340,7 @@ func strategicMergeJsonPatch(original, override interface{}) ([]byte, error) {
 	}
 
 	// Merge json specs with StrategicMerge
-	mergedPatch, err := sp.CreateTwoWayMergePatch(originalJson, overrideJson, v1.PodSpec{})
+	mergedPatch, err := sp.StrategicMergePatch(originalJson, overrideJson, v1.PodSpec{})
 	if err != nil {
 		return nil, err
 	}
