@@ -314,7 +314,7 @@ func CreateAndMergeJsonPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Printf("OnceMoreeeeeeee: %v", mergedPatch)
 	// Convert merged json to map[string]interface{}
 	var merged map[string]interface{}
 	err = json.Unmarshal(mergedPatch, &merged)
@@ -328,6 +328,7 @@ func strategicMergeJsonPatch(original, override interface{}) ([]byte, error) {
 	// Convert override specs to json
 	fmt.Printf("Printing Original: %+v\n", original)
 	fmt.Printf("Printing Override: %+v\n", override)
+
 	overrideJson, err := json.Marshal(override)
 	if err != nil {
 		return nil, err
