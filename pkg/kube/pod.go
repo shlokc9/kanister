@@ -16,6 +16,7 @@ package kube
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -316,6 +317,8 @@ func CreateAndMergeJsonPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.
 
 func strategicMergeJsonPatch(original, override interface{}) ([]byte, error) {
 	// Convert override specs to json
+	fmt.Printf("Printing Original: %+v\n", original)
+	fmt.Printf("Printing Override: %+v\n", override)
 	overrideJson, err := json.Marshal(override)
 	if err != nil {
 		return nil, err
