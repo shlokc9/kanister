@@ -1,8 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
-  creationTimestamp: null
-  name: {{ template "chart.name" .}}-manager-role
+  name: {{ .Values.operator.role }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
 rules:
 - apiGroups:
   - ""
@@ -17,11 +18,14 @@ rules:
   - list
   - create
   - update
+  - patch
   - delete
 - apiGroups:
   - apps.foundationdb.org
   resources:
   - foundationdbclusters
+  - foundationdbbackups
+  - foundationdbrestores
   verbs:
   - get
   - list
@@ -34,6 +38,8 @@ rules:
   - apps.foundationdb.org
   resources:
   - foundationdbclusters/status
+  - foundationdbbackups/status
+  - foundationdbrestores/status
   verbs:
   - get
   - update
@@ -67,6 +73,18 @@ rules:
   - ""
   resources:
   - services
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apps
+  resources:
+  - deployments
   verbs:
   - get
   - list
