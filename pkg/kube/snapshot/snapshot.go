@@ -116,7 +116,7 @@ type Source struct {
 func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Snapshotter, error) {
 	ctx := context.Background()
 	// Check if v1 (stable) snapshot API exists
-	exists, err = kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), GroupName, Version)
+	exists, err := kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), GroupName, Version)
 	if err != nil {
 		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
 	}
@@ -124,7 +124,7 @@ func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Sna
 		return NewSnapshotStable(kubeCli, dynCli), nil
 	}
 	// Check if v1alpha1 snapshot API exists
-	exists, err := kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), v1alpha1.GroupName, v1alpha1.Version)
+	exists, err = kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), v1alpha1.GroupName, v1alpha1.Version)
 	if err != nil {
 		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
 	}
