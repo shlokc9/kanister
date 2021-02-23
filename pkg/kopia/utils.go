@@ -53,6 +53,21 @@ const (
 
 	// BackupIdentifierKey is the artifact key used for kopia snapshot ID
 	BackupIdentifierKey = "backupID"
+
+	// HostNameOption is the key for passing in hostname through ActionSet Options map
+	HostNameOption = "hostName"
+
+	// UserNameOption is the key for passing in username through ActionSet Options map
+	UserNameOption = "userName"
+
+	// ObjectStorePathOption is the option that specifies the repository to
+	// use when describing repo
+	ObjectStorePathOption = "objectStorePath"
+
+	// Kopia server info flags
+	ServerAddressArg        = "serverAddress"
+	UserPassphraseSecretKey = "userPassphraseKey"
+	TLSCertSecretKey        = "certs"
 )
 
 // ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret

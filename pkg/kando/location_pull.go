@@ -23,6 +23,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -57,8 +58,15 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	ks, err := unmarshalStoreServerFlag(cmd)
+	if err != nil {
+		return err
+	}
 	s := pathFlag(cmd)
 	ctx := context.Background()
+	if ks != nil {
+		return connectToKopiaServer(ctx, ks)
+	}
 	return locationPull(ctx, p, s, target)
 }
 
@@ -76,4 +84,13 @@ func locationPull(ctx context.Context, p *param.Profile, path string, target io.
 // kopiaLocationPull pulls the data from a kopia snapshot into the given target
 func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Writer) error {
 	return kopia.Read(ctx, path, backupID, target)
+}
+
+func connectToKopiaServer(ctx context.Context, ks *param.StoreServerInfoParams) error {
+	log.Debug().Print("Connecting to kopia server")
+	err := kopia.ConnectToAPIServer(ctx, ks.Cert, ks.Password, ks.Hostname, ks.Address, ks.Username)
+	if err == nil {
+		log.Debug().Print("Connected to kopia server")
+	}
+	return err
 }
