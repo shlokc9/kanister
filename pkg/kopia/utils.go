@@ -35,6 +35,9 @@ import (
 )
 
 const (
+	// buffSize is default buffer size for kopia location pull
+	bufSize = 65536
+
 	// defaultConfigFilePath is the file which contains kopia repo config
 	defaultConfigFilePath = "/tmp/kopia-repository.config"
 

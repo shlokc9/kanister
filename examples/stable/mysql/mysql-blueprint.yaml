@@ -9,6 +9,8 @@ actions:
       mysqlCloudDump:
         keyValue:
           s3path: "{{ .Phases.dumpToObjectStore.Output.s3path }}"
+          snapID: "{{ .Phases.dumpToObjectStore.Output.snapID }}"
+          rootID: "{{ .Phases.dumpToObjectStore.Output.rootID }}"
     phases:
     - func: KubeTask
       name: dumpToObjectStore
@@ -30,7 +32,7 @@ actions:
         - |
           s3_path="/mysql-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
           root_password="{{ index .Phases.dumpToObjectStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
+          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --store-server '{{ toJson .StoreServerInfo }}' --path ${s3_path} -
           kando output s3path ${s3_path}
   restore:
     type: StatefulSet
