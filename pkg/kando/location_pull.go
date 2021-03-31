@@ -16,9 +16,11 @@ package kando
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
@@ -54,9 +56,13 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	s := pathFlag(cmd)
+	id := backupIDFlag(cmd)
 	ctx := context.Background()
 	if ks != nil {
-		return connectToKopiaServer(ctx, ks)
+		if err = connectToKopiaServer(ctx, ks); err != nil {
+			return err
+		}
+		return kopiaPull(ctx, id, target)
 	}
 	return locationPull(ctx, p, s, target)
 }
@@ -70,6 +76,12 @@ func targetWriter(target string) (io.Writer, error) {
 
 func locationPull(ctx context.Context, p *param.Profile, path string, target io.Writer) error {
 	return location.Read(ctx, target, *p, path)
+}
+
+func kopiaPull(ctx context.Context, backupID string, target io.Writer) error {
+	fmt.Println("Pulling data using kopia")
+	err := kopia.Read(ctx, backupID, target)
+	return errors.Wrap(err, "Failed to pull data using kopia")
 }
 
 func connectToKopiaServer(ctx context.Context, ks *param.StoreServerInfoParams) error {

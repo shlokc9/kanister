@@ -16,13 +16,16 @@ package kando
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
+	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -55,7 +58,10 @@ func runLocationPush(cmd *cobra.Command, args []string) error {
 	s := pathFlag(cmd)
 	ctx := context.Background()
 	if ks != nil {
-		return connectToKopiaServer(ctx, ks)
+		if err = connectToKopiaServer(ctx, ks); err != nil {
+			return err
+		}
+		return kopiaPush(ctx, s, source)
 	}
 	return locationPush(ctx, p, s, source)
 }
@@ -78,4 +84,21 @@ func sourceReader(source string) (io.Reader, error) {
 
 func locationPush(ctx context.Context, p *param.Profile, path string, source io.Reader) error {
 	return location.Write(ctx, source, *p, path)
+}
+
+func kopiaPush(ctx context.Context, path string, source io.Reader) error {
+	fmt.Println("Pushing data using kopia")
+	snapID, rootID, err := kopia.Write(ctx, path, source)
+	if err != nil {
+		return errors.Wrap(err, "Failed to push data using kopia")
+	}
+	const snapIDKey = "snapID"
+	const rootIDKey = "rootID"
+	if err = output.PrintOutput(snapIDKey, snapID); err != nil {
+		return err
+	}
+	if err = output.PrintOutput(rootIDKey, rootID); err != nil {
+		return err
+	}
+	return nil
 }

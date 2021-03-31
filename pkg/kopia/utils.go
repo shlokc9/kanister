@@ -22,6 +22,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"io"
+	"sync"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +31,9 @@ import (
 )
 
 const (
+	// buffSize is default buffer size for kopia location pull
+	bufSize = 65536
+
 	// defaultConfigFilePath is the file which contains kopia repo config
 	defaultConfigFilePath = "/tmp/kopia-repository.config"
 
@@ -123,4 +128,21 @@ func ExtractFingerprintFromCertificateJSON(cert string) (string, error) {
 	}
 
 	return fingerprint, nil
+}
+
+// Location pull copy utility
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		p := make([]byte, bufSize)
+		return &p
+	},
+}
+
+// Copy is equivalent to io.Copy().
+func Copy(dst io.Writer, src io.Reader) (int64, error) {
+	bufPtr := bufferPool.Get().(*[]byte)
+
+	defer bufferPool.Put(bufPtr)
+
+	return io.CopyBuffer(dst, src, *bufPtr)
 }
