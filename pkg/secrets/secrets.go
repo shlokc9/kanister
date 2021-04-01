@@ -19,3 +19,6 @@ func ValidateCredentials(secret *v1.Secret) error {
 		return errors.Errorf("Unsupported type '%s' for secret '%s:%s'", string(secret.Type), secret.Namespace, secret.Name)
 	}
 }
+
+// TODO
+// func ValidateKopiaCredentials()

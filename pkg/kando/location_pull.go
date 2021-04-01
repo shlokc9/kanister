@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -60,15 +61,15 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ks, err := unmarshalStoreServerFlag(cmd)
-	if err != nil {
-		return err
-	}
+	//ks, err := unmarshalStoreServerFlag(cmd)
+	//if err != nil {
+	//	return err
+	//}
 	s := pathFlag(cmd)
 	id := backupIDFlag(cmd)
 	ctx := context.Background()
-	if ks != nil {
-		if err = connectToKopiaServer(ctx, ks); err != nil {
+	if p.Location.Type == crv1alpha1.LocationTypeKopia {
+		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
 		return kopiaPull(ctx, id, target)
@@ -92,9 +93,9 @@ func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Wri
 	return kopia.Read(ctx, path, backupID, target)
 }
 
-func connectToKopiaServer(ctx context.Context, ks *param.StoreServerInfoParams) error {
+func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 	log.Debug().Print("Connecting to kopia server")
-	err := kopia.ConnectToAPIServer(ctx, ks.Cert, ks.Password, ks.Hostname, ks.Address, ks.Username)
+	err := kopia.ConnectToAPIServer(ctx, kp.Credential.KopiaServer.Cert, kp.Credential.KopiaServer.Password, kp.Location.Hostname, kp.Location.Endpoint, kp.Credential.KopiaServer.Username)
 	if err == nil {
 		log.Debug().Print("Connected to kopia server")
 	}

@@ -50,9 +50,9 @@ const (
 	// defaultDataStoreGeneralMetadataCacheSizeMB is the default metadata cache size for general command workloads
 	defaultDataStoreGeneralMetadataCacheSizeMB = 500
 
-	// tlsCertificateKey represents the key used to fetch the certificate
+	// TLSCertificateKey represents the key used to fetch the certificate
 	// from the secret.
-	tlsCertificateKey = "tls.crt"
+	TLSCertificateKey = "tls.crt"
 
 	// BackupIdentifierKey is the artifact key used for kopia snapshot ID
 	BackupIdentifierKey = "backupID"
@@ -80,7 +80,7 @@ func ExtractFingerprintFromCertSecret(ctx context.Context, cli kubernetes.Interf
 		return "", errors.Wrapf(err, "Failed to get Certificate Secret. Secret: %s", secretName)
 	}
 
-	certBytes, err := json.Marshal(secret.Data[tlsCertificateKey])
+	certBytes, err := json.Marshal(secret.Data[TLSCertificateKey])
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to marshal Certificate Secret Data")
 	}
@@ -124,7 +124,7 @@ func ExtractFingerprintFromCertificateJSON(cert string) (string, error) {
 		return "", errors.Wrap(err, "Failed to unmarshal Kopia API Server Certificate Secret Data")
 	}
 
-	decodedCertData, err := base64.StdEncoding.DecodeString(certMap[tlsCertificateKey])
+	decodedCertData, err := base64.StdEncoding.DecodeString(certMap[TLSCertificateKey])
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to base64 decode Kopia API Server Certificate Secret Data")
 	}
