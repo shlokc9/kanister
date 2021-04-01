@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/output"
@@ -51,14 +52,14 @@ func runLocationPush(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	ks, err := unmarshalStoreServerFlag(cmd)
-	if err != nil {
-		return err
-	}
+	//ks, err := unmarshalStoreServerFlag(cmd)
+	//if err != nil {
+	//	return err
+	//}
 	s := pathFlag(cmd)
 	ctx := context.Background()
-	if ks != nil {
-		if err = connectToKopiaServer(ctx, ks); err != nil {
+	if p.Location.Type == crv1alpha1.LocationTypeKopia {
+		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
 		return kopiaPush(ctx, s, source)
