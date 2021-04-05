@@ -16,11 +16,9 @@ package kando
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -72,7 +70,7 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaPull(ctx, id, target)
+		return kopiaLocationPull(ctx, id, s, target)
 	}
 	return locationPull(ctx, p, s, target)
 }

@@ -17,78 +17,15 @@ package kopia
 import (
 	"context"
 	"fmt"
-	"io"
-	"path/filepath"
 	"time"
 
 	"github.com/kopia/kopia/fs"
-	"github.com/kopia/kopia/fs/virtualfs"
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/policy"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
 	"github.com/pkg/errors"
 )
-
-// Write creates a kopia snapshot from the given reader with the given path as source
-func Write(ctx context.Context, path string, source io.Reader) (string, string, error) {
-	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
-	if !ok || password == "" {
-		return "", "", errors.New("Failed to retrieve Kopia client passphrase")
-	}
-
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, "kanister stream push")
-	if err != nil {
-		return "", "", errors.Wrap(err, "Failed to open kopia repository")
-	}
-
-	// Populate the source info with source path and file
-	sourceInfo := snapshot.SourceInfo{
-		UserName: rep.ClientOptions().Username,
-		Host:     rep.ClientOptions().Hostname,
-		Path:     filepath.Dir(path),
-	}
-
-	rootDir := virtualfs.NewStaticDirectory(sourceInfo.Path, fs.Entries{
-		virtualfs.StreamingFileFromReader(filepath.Base(path), source),
-	})
-
-	// Setup kopia uploader
-	u := snapshotfs.NewUploader(rep)
-
-	// Create a kopia snapshot
-	return SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
-}
-
-// Read reads a kopia snapshot with the given snapshot ID and copies it to the given target
-func Read(ctx context.Context, backupID string, target io.Writer) error {
-	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
-	if !ok || password == "" {
-		return errors.New("Failed to retrieve Kopia client passphrase")
-	}
-
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, "kanister stream push")
-	if err != nil {
-		return errors.Wrap(err, "Failed to open kopia repository")
-	}
-
-	oid, err := snapshotfs.ParseObjectIDWithPath(ctx, rep, backupID)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to parse backupID: %v", backupID)
-	}
-
-	// Open repository object and copy the data to the target
-	r, err := rep.OpenObject(ctx, oid)
-	if err != nil {
-		return errors.Wrapf(err, "error opening object %v", oid)
-	}
-
-	defer r.Close() //nolint:errcheck
-
-	_, err = Copy(target, r)
-
-	return errors.Wrap(err, "Failed to copy data to target")
-}
 
 // SnapshotSource creates and uploads a kopia snapshot to the given repository
 func SnapshotSource(

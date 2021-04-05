@@ -16,7 +16,6 @@ package kando
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 
@@ -62,7 +61,7 @@ func runLocationPush(cmd *cobra.Command, args []string) error {
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaPush(ctx, s, source)
+		return kopiaLocationPush(ctx, s, source)
 	}
 	return locationPush(ctx, p, s, source)
 }

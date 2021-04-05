@@ -24,9 +24,8 @@ import (
 )
 
 const (
-	backupIDFlagName = "backup-id"
-	pathFlagName     = "path"
-	profileFlagName  = "profile"
+	pathFlagName    = "path"
+	profileFlagName = "profile"
 	//storeServerFlagName = "store-server"
 )
 
@@ -38,16 +37,11 @@ func newLocationCommand() *cobra.Command {
 	cmd.AddCommand(newLocationPushCommand())
 	cmd.AddCommand(newLocationPullCommand())
 	cmd.AddCommand(newLocationDeleteCommand())
-	cmd.PersistentFlags().StringP(backupIDFlagName, "i", "", "Specify a backup identifier from backup phase (optional)")
 	cmd.PersistentFlags().StringP(pathFlagName, "s", "", "Specify a path suffix (optional)")
 	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
 	//cmd.PersistentFlags().StringP(storeServerFlagName, "", "", "Objectstore server address")
 	_ = cmd.MarkFlagRequired(profileFlagName)
 	return cmd
-}
-
-func backupIDFlag(cmd *cobra.Command) string {
-	return cmd.Flag(backupIDFlagName).Value.String()
 }
 
 func pathFlag(cmd *cobra.Command) string {
