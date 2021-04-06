@@ -16,7 +16,6 @@ package kopia
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -133,7 +132,6 @@ func isGetRepoParametersError(err error) bool {
 // ExtractFingerprintFromCertificate fetch the fingerprint from a base64 encoded,
 // certificate which is also type asserted into a string.
 func ExtractFingerprintFromCertificate(cert string) (string, error) {
-	fmt.Println("TLSCERT::", cert)
 	fingerprint, err := extractFingerprintFromSliceOfBytes([]byte(cert))
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to extract fingerprint Kopia API Server Certificate Secret Data")
