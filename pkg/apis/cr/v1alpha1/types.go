@@ -163,7 +163,8 @@ type Phase struct {
 
 // Artifact tracks objects produced by an action.
 type Artifact struct {
-	KeyValue map[string]string `json:"keyValue"`
+	KeyValue      map[string]string `json:"keyValue"`
+	KopiaSnapshot string            `json:"kopiaSnapshot"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

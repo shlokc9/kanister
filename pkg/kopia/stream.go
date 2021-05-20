@@ -32,29 +32,47 @@ const (
 	// buffSize is default buffer size used during kopia read
 	bufSize = 65536
 
+	defaultRootDir = "/kanister-backups"
+	dotDir         = "."
+
 	pushRepoPurpose = "kando location push"
 	pullRepoPurpose = "kando location pull"
 )
 
+// SnapshotInfo tracks Kopia based snapshot information produced by a kando command in a phase.
+type SnapshotInfo struct {
+	ID           string `json:"iD"`
+	LogicalSize  int64  `json:"logicalSize"`
+	PhysicalSize int64  `json:"physicalSize"`
+}
+
 // Write creates a kopia snapshot from the given reader
 // A virtual directory tree rooted at filepath.Dir(path) is created with
 // a kopia streaming file with filepath.Base(path) as name
-func Write(ctx context.Context, path string, source io.Reader) (string, string, error) {
+func Write(ctx context.Context, path string, source io.Reader) (*SnapshotInfo, error) {
 	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
 	if !ok || password == "" {
-		return "", "", errors.New("Failed to retrieve kopia client passphrase")
+		return nil, errors.New("Failed to retrieve kopia client passphrase")
 	}
 
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pushRepoPurpose)
+	onUpload := func(int64) {}
+
+	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pushRepoPurpose, onUpload)
 	if err != nil {
-		return "", "", errors.Wrap(err, "Failed to open kopia repository")
+		return nil, errors.Wrap(err, "Failed to open kopia repository")
+	}
+
+	// If the path provided does not have a parent directory, use default directory
+	var rootPath string
+	if rootPath = filepath.Dir(path); rootPath == dotDir {
+		rootPath = defaultRootDir
 	}
 
 	// Populate the source info with source path
 	sourceInfo := snapshot.SourceInfo{
 		UserName: rep.ClientOptions().Username,
 		Host:     rep.ClientOptions().Hostname,
-		Path:     filepath.Dir(path),
+		Path:     rootPath,
 	}
 
 	rootDir := virtualfs.NewStaticDirectory(sourceInfo.Path, fs.Entries{
@@ -64,8 +82,33 @@ func Write(ctx context.Context, path string, source io.Reader) (string, string, 
 	// Setup kopia uploader
 	u := snapshotfs.NewUploader(rep)
 
+	// Set progress to capture stats
+	u.Progress = &kandoUploadProgress{}
+	onUpload = func(numBytes int64) {
+		u.Progress.UploadedBytes(numBytes)
+	}
+
 	// Create a kopia snapshot
-	return SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
+	snapID, _, err := SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
+	if err != nil {
+		return nil, err
+	}
+
+	// Get snapshot stats from Progress
+	var (
+		p *kandoUploadProgress
+	)
+	if p, ok = u.Progress.(*kandoUploadProgress); !ok {
+		return nil, errors.New("Invalid upload progress")
+	}
+	hashedBytes, cachedBytes, uploadedBytes := p.GetStats()
+
+	snapshotInfo := &SnapshotInfo{
+		ID:           snapID,
+		LogicalSize:  hashedBytes + cachedBytes,
+		PhysicalSize: uploadedBytes,
+	}
+	return snapshotInfo, nil
 }
 
 // Read reads a kopia snapshot with the given ID and copies it to the given target
@@ -76,7 +119,7 @@ func Read(ctx context.Context, backupID, path string, target io.Writer) error {
 		return errors.New("Failed to retrieve kopia client passphrase")
 	}
 
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
+	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose, func(int64) {})
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}

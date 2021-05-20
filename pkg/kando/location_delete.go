@@ -16,6 +16,7 @@ package kando
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -35,7 +36,7 @@ func newLocationDeleteCommand() *cobra.Command {
 			return runLocationDelete(c)
 		},
 	}
-	cmd.Flags().StringP(backupIDFlagName, "b", "", "Pass the backup ID from the location push command (optional)")
+	cmd.Flags().StringP(kopiaSnapshotFlagName, "i", "", "Pass the Kopia snapshot information from the location push command (optional)")
 	return cmd
 }
 
@@ -46,16 +47,21 @@ func runLocationDelete(cmd *cobra.Command) error {
 	}
 	cmd.SilenceUsage = true
 	s := pathFlag(cmd)
-	id := backupIDFlag(cmd)
 	ctx := context.Background()
 	if p.Location.Type == crv1alpha1.LocationTypeKopia {
-		if id == "" {
-			return errors.New("Backup ID is required to delete data using kopia")
+		snap := kopiaSnapshotFlag(cmd)
+		if snap == "" {
+			return errors.New("Kopia snapshot information is required to pull data using kopia")
 		}
+		kopiaSnapInfo := kopia.SnapshotInfo{}
+		if err = json.Unmarshal([]byte(snap), &kopiaSnapInfo); err != nil {
+			return errors.Wrap(err, "Failed to unmarshal Kopia snapshot information")
+		}
+
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaLocationDelete(ctx, id, s)
+		return kopiaLocationDelete(ctx, kopiaSnapInfo.ID, s)
 	}
 	return locationDelete(ctx, p, s)
 }

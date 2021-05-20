@@ -16,6 +16,7 @@ package kando
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"os"
 
@@ -27,6 +28,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
+)
+
+const (
+	defaultKandoOutputKey = "kandoOutput"
 )
 
 func newLocationPushCommand() *cobra.Command {
@@ -84,9 +89,13 @@ func locationPush(ctx context.Context, p *param.Profile, path string, source io.
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
 func kopiaLocationPush(ctx context.Context, path string, source io.Reader) error {
-	snapID, _, err := kopia.Write(ctx, path, source)
+	snapInfo, err := kopia.Write(ctx, path, source)
 	if err != nil {
 		return errors.Wrap(err, "Failed to push data using kopia")
 	}
-	return output.PrintOutput(kopia.BackupIdentifierKey, snapID)
+	snapInfoString, err := json.Marshal(snapInfo)
+	if err != nil {
+		return errors.Wrap(err, "Failed to marshal Kopia snapshot information")
+	}
+	return output.PrintOutput(defaultKandoOutputKey, string(snapInfoString))
 }

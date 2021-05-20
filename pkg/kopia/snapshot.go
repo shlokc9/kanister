@@ -89,7 +89,7 @@ func DeleteSnapshot(ctx context.Context, backupID, path string) error {
 		return errors.New("Failed to retrieve kopia client passphrase")
 	}
 
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
+	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose, func(int64) {})
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
