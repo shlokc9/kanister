@@ -23,8 +23,11 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
+	"strconv"
 	"sync"
+	"time"
 
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
 	"github.com/pkg/errors"
@@ -350,7 +353,9 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)
 	}
-	ctx := context.Background()
+	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(iv)*time.Second)
+	defer cancel()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	for i := range as.Status.Actions {
 		if err = c.runAction(ctx, as, i); err != nil {
@@ -371,6 +376,17 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	}
 	log.WithContext(ctx).Print("Created actionset and started executing actions", field.M{"NewActionSetName": as.GetName()})
 	return nil
+}
+
+func getEnvAsIntOrDefault(envKey string, def int) int {
+	if v, ok := os.LookupEnv(envKey); ok {
+		iv, err := strconv.Atoi(v)
+		if err == nil {
+			return iv
+		}
+		log.WithError(err)
+	}
+	return def
 }
 
 // nolint:gocognit
@@ -409,6 +425,24 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			}
 			var rf func(*crv1alpha1.ActionSet) error
 			if err != nil {
+				// If error is because of context canceled && timeout then update the actionset with failed status 
+				if ctx.Err() != nil {
+					bpName := as.Spec.Actions[aIDX].Blueprint
+					bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(context.Background(), bpName, v1.GetOptions{})
+					reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[aIDX].Name)
+					c.logAndErrorEvent(context.Background(), fmt.Sprintf("Failed to Execute Action %s:", as.GetName()), reason, err, as, bp)
+					as.Status.State = crv1alpha1.StateFailed
+					as.Status.Error = crv1alpha1.Error{
+						Message: err.Error(),
+					}
+					as.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateFailed
+					if _, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.Background(), as, v1.UpdateOptions{}); err != nil {
+						reason = fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[aIDX].Name)
+						msg = fmt.Sprintf("Failed to update ActionSet: %s", as.GetName())
+						c.logAndErrorEvent(context.Background(), msg, reason, err, as, bp)
+					}
+					return nil
+				}
 				rf = func(ras *crv1alpha1.ActionSet) error {
 					ras.Status.State = crv1alpha1.StateFailed
 					ras.Status.Error = crv1alpha1.Error{
