@@ -126,6 +126,7 @@ func (p *FcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 		return nil, errors.Wrap(err, "Failed to create disk from snapshot")
 	}
 	log.Debug().Print("Started CreateDiskFromSnapshot task", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
+	log.Info().Print("SIRISH  CreateDiskFromSnapshot timeout", field.M{"timeout": vmWareTimeout, "VolumeID": volID, "SnapshotID": snapshotID})
 	res, err := task.Wait(ctx, vmWareTimeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to wait on task")
