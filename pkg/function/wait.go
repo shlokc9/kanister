@@ -104,7 +104,7 @@ func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond Wa
 			result, evalErr = evaluateCondition(ctx, dynCli, cond)
 			if evalErr != nil {
 				// TODO: Fail early if the error is due to jsonpath syntax
-				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition")
+				log.Info().WithError(evalErr).Print("Failed to evaluate the condition")
 				return false, nil
 			}
 			if result {
@@ -115,7 +115,7 @@ func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond Wa
 			result, evalErr = evaluateCondition(ctx, dynCli, cond)
 			if evalErr != nil {
 				// TODO: Fail early if the error is due to jsonpath syntax
-				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition")
+				log.Info().WithError(evalErr).Print("Failed to evaluate the condition")
 				return false, nil
 			}
 			if !result {
@@ -141,7 +141,7 @@ func evaluateCondition(ctx context.Context, dynCli dynamic.Interface, cond Condi
 	if err != nil {
 		return false, err
 	}
-	log.Debug().Print(fmt.Sprintf("Resolved jsonpath: %s", rcondition))
+	log.Info().Print(fmt.Sprintf("Resolved jsonpath: %s", rcondition))
 	t, err := template.New("config").Option("missingkey=zero").Funcs(sprig.TxtFuncMap()).Parse(rcondition)
 	if err != nil {
 		return false, errors.WithStack(err)
@@ -150,6 +150,7 @@ func evaluateCondition(ctx context.Context, dynCli dynamic.Interface, cond Condi
 	if err = t.Execute(buf, nil); err != nil {
 		return false, errors.WithStack(err)
 	}
+	log.Info().Print(fmt.Sprintf("Evaluated condition: %s", strings.TrimSpace(buf.String())))
 	return strings.TrimSpace(buf.String()) == "true", nil
 }
 
