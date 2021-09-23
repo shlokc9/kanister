@@ -121,6 +121,7 @@ func SetFormatter(format OutputFormat) {
 func init() {
 	SetFormatter(TextFormat)
 	initEnvVarFields()
+	log.SetLevel(logrus.DebugLevel)
 }
 
 func Info() Logger {
