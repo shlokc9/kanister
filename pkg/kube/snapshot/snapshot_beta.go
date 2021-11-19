@@ -20,6 +20,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	snapv1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
@@ -56,7 +57,7 @@ func cloneSnapshotClass(ctx context.Context, dynCli dynamic.Interface, snapClass
 		return errors.Wrapf(err, "Failed to find source VolumeSnapshotClass: %s", sourceClassName)
 	}
 
-	sourceSnapClass := v1.VolumeSnapshotClass{}
+	sourceSnapClass := snapv1beta1.VolumeSnapshotClass{}
 	if err := TransformUnstructured(usSourceSnapClass, &sourceSnapClass); err != nil {
 		return err
 	}
@@ -405,6 +406,19 @@ func UnstructuredVolumeSnapshotContent(gvr schema.GroupVersionResource, name, sn
 }
 
 func UnstructuredVolumeSnapshotClass(gvr schema.GroupVersionResource, name, driver, deletionPolicy string, params map[string]string) *unstructured.Unstructured {
+	if params == nil {
+		return &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
+				"kind":       VolSnapClassKind,
+				"metadata": map[string]interface{}{
+					"name": name,
+				},
+				VolSnapClassBetaDriverKey: driver,
+				"deletionPolicy":          deletionPolicy,
+			},
+		}
+	}
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
