@@ -20,7 +20,6 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
-	snapv1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
@@ -57,7 +56,7 @@ func cloneSnapshotClass(ctx context.Context, dynCli dynamic.Interface, snapClass
 		return errors.Wrapf(err, "Failed to find source VolumeSnapshotClass: %s", sourceClassName)
 	}
 
-	sourceSnapClass := snapv1beta1.VolumeSnapshotClass{}
+	sourceSnapClass := v1.VolumeSnapshotClass{}
 	if err := TransformUnstructured(usSourceSnapClass, &sourceSnapClass); err != nil {
 		return err
 	}
