@@ -7,8 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/skus"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/subscriptions"
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/Azure/go-autorest/autorest"
 	azto "github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -781,4 +784,62 @@ func staticRegionToZones(region string) ([]string, error) {
 		return nil, nil
 	}
 	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
+}
+
+func (s *AdStorage) dynamicRegionToZones(ctx context.Context, region string) ([]string, error) {
+	regionMap, err := dynamicRegionMapAzure(ctx, s.azCli.Authorizer, s.azCli.SubscriptionID)
+	if err != nil {
+		return nil, errors.Wrap(err, "Fialed to get dynamic region map for azure")
+	}
+	if zones, ok := regionMap[region]; ok {
+		return zones, nil
+	}
+	return nil, errors.Errorf("Region (%s) not available", region)
+}
+
+// dynamicRegionMapAzure derives a mapping from Regions to zones for Azure. Depends on subscriptionID
+func dynamicRegionMapAzure(ctx context.Context, authorizer *autorest.BearerAuthorizer, subID string) (map[string][]string, error) {
+	subscriptionsCLient := subscriptions.NewClient()
+	subscriptionsCLient.Authorizer = authorizer
+	llResp, err := subscriptionsCLient.ListLocations(ctx, subID)
+	if err != nil {
+		return nil, err
+	}
+	regionMap := make(map[string]map[string]struct{})
+	for _, location := range *llResp.Value {
+		regionMap[*location.Name] = make(map[string]struct{})
+	}
+
+	skuClient := skus.NewResourceSkusClient(subID)
+	skuClient.Authorizer = authorizer
+	skuResults, err := skuClient.ListComplete(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for skuResults.Value().Name != nil {
+		if *skuResults.Value().ResourceType == "disks" {
+			for _, location := range *skuResults.Value().LocationInfo {
+				if val, ok := regionMap[*location.Location]; ok {
+					for _, zone := range *location.Zones {
+						val[zone] = struct{}{}
+					}
+					regionMap[*location.Location] = val
+				}
+			}
+		}
+		if err = skuResults.NextWithContext(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	// convert to map of []string
+	regionMapResult := make(map[string][]string)
+	for region, zoneSet := range regionMap {
+		var zoneArray []string
+		for zone := range zoneSet {
+			zoneArray = append(zoneArray, region+"-"+zone)
+		}
+		regionMapResult[region] = zoneArray
+	}
+	return regionMapResult, nil
 }

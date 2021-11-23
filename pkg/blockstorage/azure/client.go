@@ -117,6 +117,10 @@ func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.B
 		return nil, errors.New("Cannot get clientSecret from config")
 	}
 
+	auth.EnvironmentSettings{
+		Values: clientID, clientSecret, tenantID,
+		Environment: env,
+	}
 	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
 	if aDDEndpoint, ok := config[blockstorage.AzureActiveDirEndpoint]; ok {
 		credConfig.AADEndpoint = aDDEndpoint
