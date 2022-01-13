@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
@@ -42,18 +43,18 @@ func NewPodWriter(cli kubernetes.Interface, path string, content io.Reader) *Pod
 }
 
 // Write will create a new file(if not present) and write the provided content to the file
-func (p *PodWriter) Write(ctx context.Context, namespace, podName, containerName string) error {
+func (p *PodWriter) Write(ctx context.Context, namespace, podName, containerName string, timeout time.Duration) error {
 	cmd := []string{"sh", "-c", "cat - > " + p.path}
-	stdout, stderr, err := Exec(p.cli, namespace, podName, containerName, cmd, p.content)
+	stdout, stderr, err := Exec(p.cli, namespace, podName, containerName, cmd, p.content, timeout)
 	format.Log(podName, containerName, stdout)
 	format.Log(podName, containerName, stderr)
 	return errors.Wrap(err, "Failed to write contents to file")
 }
 
 // Remove will delete the file created by Write() func
-func (p *PodWriter) Remove(ctx context.Context, namespace, podName, containerName string) error {
+func (p *PodWriter) Remove(ctx context.Context, namespace, podName, containerName string, timeout time.Duration) error {
 	cmd := []string{"sh", "-c", "rm " + p.path}
-	stdout, stderr, err := Exec(p.cli, namespace, podName, containerName, cmd, nil)
+	stdout, stderr, err := Exec(p.cli, namespace, podName, containerName, cmd, nil, timeout)
 	format.Log(podName, containerName, stdout)
 	format.Log(podName, containerName, stderr)
 	return errors.Wrap(err, "Failed to delete file")
