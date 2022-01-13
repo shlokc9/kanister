@@ -19,8 +19,9 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
@@ -38,11 +39,13 @@ type ExecOptions struct {
 	Stdin         io.Reader
 	CaptureStdout bool
 	CaptureStderr bool
+
+	Timeout time.Duration
 }
 
 // Exec is our version of the call to `kubectl exec` that does not depend on
 // k8s.io/kubernetes.
-func Exec(cli kubernetes.Interface, namespace, pod, container string, command []string, stdin io.Reader) (string, string, error) {
+func Exec(cli kubernetes.Interface, namespace, pod, container string, command []string, stdin io.Reader, timeout time.Duration) (string, string, error) {
 	opts := ExecOptions{
 		Command:       command,
 		Namespace:     namespace,
@@ -51,6 +54,7 @@ func Exec(cli kubernetes.Interface, namespace, pod, container string, command []
 		Stdin:         stdin,
 		CaptureStdout: true,
 		CaptureStderr: true,
+		Timeout:       timeout,
 	}
 	return ExecWithOptions(cli, opts)
 }
@@ -64,7 +68,8 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 		Resource("pods").
 		Name(options.PodName).
 		Namespace(options.Namespace).
-		SubResource("exec")
+		SubResource("exec").
+		Timeout(options.Timeout)
 
 	// Add container name if passed
 	if len(options.ContainerName) != 0 {
